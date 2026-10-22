@@ -1,0 +1,591 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CaféTico: El Juego de las Pruebas</title>
+<style>
+:root{--bg:#0a1230;--panel:#121c45;--panel2:#1a2760;--line:#2b3a80;--tx:#f1f4ff;--mut:#a8b3e0;--blue:#1e4bd8;--red:#ce1126;--gold:#f5b301;--ok:#22c55e;--bad:#ef4444}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{min-height:100%;background:var(--bg);color:var(--tx);font-family:"Segoe UI",Inter,system-ui,-apple-system,Roboto,sans-serif}
+body{background:radial-gradient(900px 500px at 90% -10%,#1e4bd855,transparent 70%),radial-gradient(700px 400px at -10% 110%,#ce112644,transparent 70%),var(--bg);background-attachment:fixed}
+body::before{content:"";position:fixed;left:0;right:0;top:0;height:6px;background:linear-gradient(90deg,var(--blue) 0 20%,#fff 20% 40%,var(--red) 40% 60%,#fff 60% 80%,var(--blue) 80%);z-index:20}
+#hud{position:sticky;top:6px;z-index:10;display:flex;gap:14px;align-items:center;padding:10px 18px;background:#0a1230ee;backdrop-filter:blur(6px);border-bottom:1px solid var(--line);font-size:14px;flex-wrap:wrap}
+#hud .logo{font-weight:800;letter-spacing:.02em}
+#hud .sp{flex:1}
+#hud .pill{background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:4px 12px;font-weight:700}
+main{max-width:960px;margin:0 auto;padding:22px 16px 60px}
+h1{font-size:clamp(34px,6vw,58px);line-height:1.05;letter-spacing:-.02em}
+h2{font-size:clamp(24px,4vw,34px);margin-bottom:10px}
+h3{font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin:16px 0 8px}
+p{line-height:1.55;color:#dfe5ff;margin-bottom:10px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px}
+.btn{display:inline-flex;gap:8px;align-items:center;justify-content:center;background:linear-gradient(180deg,#2b5df0,#1e4bd8);color:#fff;border:0;border-radius:12px;padding:12px 22px;font-size:17px;font-weight:700;cursor:pointer;box-shadow:0 4px 0 #14349a;transition:transform .08s}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 #14349a}
+.btn.red{background:linear-gradient(180deg,#e4283d,#ce1126);box-shadow:0 4px 0 #8c0b1a}
+.btn.ghost{background:var(--panel2);box-shadow:0 4px 0 #0d1640;border:1px solid var(--line)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.center{text-align:center}
+.mut{color:var(--mut)}
+.chip{display:inline-block;background:#f5b30122;border:1px solid #f5b30199;color:#ffe29a;border-radius:999px;padding:4px 12px;margin:3px;font-size:14px;font-weight:600}
+.small{font-size:13px;color:var(--mut)}
+/* title */
+.hero{padding:30px 6px 10px}
+.hero .kick{color:var(--gold);font-weight:800;letter-spacing:.18em;text-transform:uppercase;font-size:14px;margin-bottom:10px}
+.hero h1 em{font-style:normal;color:var(--gold)}
+.cast-row{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0}
+.mini{display:flex;gap:8px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:5px 14px 5px 5px;font-size:14px;font-weight:600}
+.mini .av{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-size:20px}
+.disc{font-size:12.5px;color:var(--mut);border-top:1px dashed var(--line);padding-top:12px;margin-top:20px}
+/* map */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+.lv{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;cursor:pointer;text-align:left;color:var(--tx);font:inherit;transition:transform .1s,border-color .1s}
+.lv:hover:not(.lock){transform:translateY(-3px);border-color:var(--gold)}
+.lv .n{font-size:12px;color:var(--gold);font-weight:800;letter-spacing:.1em}
+.lv .e{font-size:30px}
+.lv b{display:block;font-size:16px;margin:2px 0 4px}
+.lv .stars{font-size:18px;letter-spacing:2px;color:var(--gold)}
+.lv.lock{opacity:.45;cursor:not-allowed}
+.lv.done{border-color:#22c55e88}
+.bar{height:10px;background:#0b1338;border-radius:999px;overflow:hidden;border:1px solid var(--line)}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--blue),var(--gold));width:0;transition:width .4s}
+/* scene */
+.stage{border-radius:18px;border:1px solid var(--line);overflow:hidden;background:linear-gradient(160deg,color-mix(in srgb,var(--c) 22%,#0a1230),#0a1230 70%);min-height:430px;display:flex;flex-direction:column}
+.place{padding:10px 16px;font-size:13px;color:var(--mut);border-bottom:1px solid #ffffff14;background:#0006}
+.talk{display:flex;gap:18px;align-items:flex-start;padding:22px 20px;flex:1}
+.who{flex:none;text-align:center;width:112px}
+.who .av{width:96px;height:96px;border-radius:50%;display:grid;place-items:center;font-size:52px;background:color-mix(in srgb,var(--c) 40%,#0a1230);border:3px solid var(--c);box-shadow:0 0 0 6px color-mix(in srgb,var(--c) 20%,transparent);margin:0 auto 8px}
+.who b{font-size:13px;color:var(--c);display:block;line-height:1.2}
+.bubble{flex:1;background:#ffffff10;border:1px solid #ffffff22;border-radius:6px 18px 18px 18px;padding:16px 18px;font-size:18px;line-height:1.55;min-height:120px;cursor:pointer}
+.bubble pre{background:#060a1f;border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-top:8px;font:14px/1.5 "JetBrains Mono",Consolas,monospace;overflow:auto;color:#d6defa;white-space:pre}
+.bubble .ct{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);font-weight:800}
+.ctrl{display:flex;gap:10px;align-items:center;padding:12px 16px;border-top:1px solid #ffffff14;background:#0006}
+.ctrl .dots{flex:1;display:flex;gap:4px;flex-wrap:wrap}
+.ctrl .dots i{width:14px;height:6px;border-radius:3px;background:#ffffff25}
+.ctrl .dots i.on{background:var(--gold)}
+.ctrl .dots i.cur{background:#fff}
+/* quiz */
+.qtop{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.qtop .sp{flex:1}
+.hearts{font-size:22px;letter-spacing:3px}
+.q{font-size:clamp(19px,3vw,24px);font-weight:700;line-height:1.35;margin-bottom:16px}
+.opts{display:grid;gap:10px}
+.opt{display:flex;gap:12px;align-items:center;text-align:left;background:var(--panel2);border:2px solid var(--line);border-radius:14px;padding:13px 16px;color:var(--tx);font:inherit;font-size:17px;cursor:pointer;line-height:1.4;transition:border-color .1s,transform .1s}
+.opt:hover:not(:disabled){border-color:var(--gold);transform:translateX(3px)}
+.opt .l{flex:none;width:32px;height:32px;border-radius:50%;background:#0b1338;display:grid;place-items:center;font-weight:800;color:var(--gold)}
+.opt.ok{border-color:var(--ok);background:#14532d}
+.opt.no{border-color:var(--bad);background:#5b1620}
+.opt.gone{opacity:.25;text-decoration:line-through}
+.opt:disabled{cursor:default}
+.fb{margin-top:14px;border-radius:14px;padding:14px 16px;border:1px solid var(--line);background:#ffffff10;display:flex;gap:12px;align-items:flex-start}
+.fb .av{flex:none;width:48px;height:48px;border-radius:50%;display:grid;place-items:center;font-size:26px;background:#0006}
+.fb.ok{border-color:var(--ok)}.fb.no{border-color:var(--bad)}
+.fb b{display:block;margin-bottom:2px}
+.recap li{margin:6px 0 6px 20px;line-height:1.5}
+.big{font-size:60px}
+.stars-big{font-size:46px;letter-spacing:6px;color:var(--gold)}
+.stat{display:inline-block;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:10px 16px;margin:4px;min-width:120px}
+.stat b{display:block;font-size:24px;color:var(--gold)}
+@media(max-width:620px){.talk{flex-direction:column;align-items:center}.who{width:auto}.bubble{font-size:16.5px;width:100%}.who .av{width:72px;height:72px;font-size:38px}}
+@keyframes pop{0%{transform:scale(.9);opacity:0}100%{transform:none;opacity:1}}
+.pop{animation:pop .25s ease}
+</style>
+</head>
+<body>
+<div id="hud">
+  <span class="logo">☕ CaféTico</span>
+  <span id="hlevel" class="mut"></span>
+  <span class="sp"></span>
+  <span class="pill" id="hscore">⭐ 0</span>
+  <span class="pill" id="htime">⏱ 00:00</span>
+</div>
+<main id="app"></main>
+
+<script>
+/* ============================ PERSONAJES ============================ */
+var CH={
+  T:{n:'Toledo',e:'🎤',c:'#f5b301'},
+  J:{n:'Julián el Tucán',e:'🦜',c:'#22c55e'},
+  A:{n:'Araya Bloks',e:'🧱',c:'#f97316'},
+  E:{n:'Edgar Silva',e:'🎸',c:'#a78bfa'},
+  M:{n:'Melissa Mora',e:'✨',c:'#ec4899'},
+  P:{n:'Porcionzon',e:'🍕',c:'#ef4444'}
+};
+
+/* ============================ NIVELES ============================ */
+/* escena: [quien, texto]  |  ['code', titulo, codigo]
+   pregunta: [enunciado, CORRECTA, mala1, mala2, mala3, explicacion]  (el juego las revuelve) */
+var LV=[
+/* ---------- 1 ---------- */
+{t:'Pitazo inicial: ¿por qué probar?',e:'🚩',place:'Soda La Lora Programadora, en pleno Chepe',
+ scenes:[
+ ['T','¡Epa, epa, epa! Bienvenidos a la Soda La Lora Programadora, aquí en pleno Chepe. El equipo de CaféTico lanza su app el sábado en la Feria Verde... y diay, nadie ha probado nada. ¡Qué torta!'],
+ ['P','Mae, pero si yo la abrí ayer y me sirvió. ¡Quedó tuanis! Yo digo que ya está lista.'],
+ ['M','Porcio, que te funcione una vez no es probar. Probar es buscar defectos con método. Y ojo: nunca se demuestra que un software no tiene errores; solo se baja el riesgo.'],
+ ['J','Y el riesgo sale caro, mae. En 1996 el cohete Ariane 5 se desvió y se autodestruyó a los 37 segundos: convirtieron un número de 64 bits a uno de 16 y se desbordó. Unos 370 millones de dólares... ¡por un numerito!'],
+ ['A','Y Knight Capital, en 2012: un despliegue dejó código viejo corriendo en uno de ocho servidores y en 45 minutos perdieron unos 440 millones de dólares. Eso no es un error, es un terremoto en Cartago.'],
+ ['E','Hay una regla, mi gente: entre más tarde se encuentra el defecto, más caro sale. Boehm lo resumió como ×10 por cada fase. Es un orden de magnitud, no una ley exacta, pero la idea es bien clara.'],
+ ['T','Ahora, dos palabras que se confunden un montón. Verificar: ¿estamos construyendo el producto bien? O sea, cumple la especificación. Validar: ¿estamos construyendo el producto correcto? O sea, le sirve al usuario.'],
+ ['P','Ah, ya caché. Si doña Lela pide gallo pinto y yo le hago un sushi perfectísimo, verifiqué bien pero no validé.'],
+ ['M','Exacto, Porcio. Para repartir el esfuerzo existe la pirámide de pruebas: muchas unitarias abajo (rápidas y baratas), algunas de integración y API en el medio, y pocas E2E arriba (lentas y frágiles). Al revés se llama cono de helado, y se derrite.'],
+ ['J','Además las pruebas tienen varias etiquetas: caja blanca, negra o gris; estáticas (sin ejecutar) o dinámicas; por nivel; funcionales o no funcionales. Una misma prueba puede ser varias a la vez.']
+ ],
+ recap:{pts:['Probar reduce el riesgo; nunca demuestra ausencia de errores.','Cuanto antes se halla un defecto, más barato (regla ×10 de Boehm, orientativa).','Verificación = ¿bien hecho? · Validación = ¿lo correcto?','Pirámide: muchas unitarias, algunas de integración/API, pocas E2E.','Estática = sin ejecutar · Dinámica = ejecutando.'],tools:['SonarQube (estática)','Revisiones entre pares']},
+ qs:[
+ ['Según Melissa, ¿qué es cierto sobre probar software?','Reduce el riesgo, pero nunca demuestra que no hay errores','Demuestra que el software queda libre de errores','Solo hace falta cuando el cliente se queja','Solo sirve para encontrar errores en la interfaz','Probar muestra la presencia de defectos, no su ausencia: por eso se habla de reducir el riesgo.'],
+ ['¿Qué causó la pérdida del cohete Ariane 5 en 1996?','Un desbordamiento al convertir un número de 64 bits a uno de 16 bits','Un ataque informático al sistema de control','Que se agotó la memoria de la base de datos','Un error de ortografía en el manual del usuario','Fue una conversión numérica que desbordó, en código reutilizado del Ariane 4 sin probarlo con las condiciones del nuevo cohete.'],
+ ['Un software cumple al pie de la letra la especificación, pero el usuario no lo necesita. ¿Qué falló?','La validación (¿es el producto correcto?)','La verificación (¿está bien construido?)','La prueba de carga','La prueba de seguridad','Cumplir la especificación es verificación; que sirva al usuario es validación. Como el sushi perfecto cuando se pidió gallo pinto.'],
+ ['¿Cómo se reparte el esfuerzo según la pirámide de pruebas?','Muchas unitarias en la base, algunas de integración/API y pocas E2E arriba','Pocas unitarias, muchas manuales y muchas E2E','Todas las pruebas por igual en cada nivel','Solo pruebas E2E, porque son las más realistas','Base ancha de pruebas rápidas y baratas; cima estrecha de pruebas lentas y frágiles.'],
+ ['¿Qué es el anti-patrón del «cono de helado»?','Muchas pruebas manuales y E2E y casi ninguna unitaria','Tener solo pruebas unitarias','Probar únicamente en producción','Ejecutar las pruebas una vez al año','Genera ciclos de feedback de horas y suites inestables: es la pirámide al revés.'],
+ ['¿Qué es una prueba estática?','La que revisa código o documentos sin ejecutar el programa','La que se ejecuta siempre en el mismo servidor','La que mide cuántos usuarios soporta el sistema','La que solo hace el cliente','Las revisiones entre pares y herramientas como SonarQube o los linters son pruebas estáticas.']
+ ]},
+/* ---------- 2 ---------- */
+{t:'Bloque por bloque: pruebas unitarias',e:'🧱',place:'El taller de Araya, con bloques por todo lado',
+ scenes:[
+ ['A','Mae, yo soy Araya Bloks y de bloques sé. Nadie levanta una casa sin revisar cada bloque primero. En software, esa es la prueba unitaria: probar la pieza más pequeña con comportamiento propio (una función, un método, una clase) aislada del resto.'],
+ ['P','¿Y cómo así «aislada»? Si mi función consulta la base de datos, ¿cómo la pruebo sin la base?'],
+ ['M','Con dobles: mocks y stubs. Sustituyen la base de datos, la red o hasta el reloj, para que la prueba dependa solo de tu código.'],
+ ['code','pytest (Python)','def aplicar_descuento(precio, pct):\n    return precio * (1 - pct/100)\n\ndef test_descuento_20():\n    assert aplicar_descuento(100, 20) == 80\n\ndef test_sin_descuento():\n    assert aplicar_descuento(50, 0) == 50'],
+ ['E','Se lee como canción sencilla: con precio 100 y descuento de 20 %, tiene que dar 80. Con descuento 0, el precio no cambia. Primero preparo, luego ejecuto y al final compruebo: Arrange, Act, Assert.'],
+ ['J','Lo rico es que son rapidísimas: milisegundos. Corrés miles en un minuto, y si una falla, el defecto está ahí mismito, localizado.'],
+ ['A','Se mide con la cobertura de código: el porcentaje de líneas o ramas que las pruebas ejecutan. Una meta de 80 % es común, pero cuidado: cobertura alta no es lo mismo que buenas pruebas.'],
+ ['P','O sea que puedo sacar 100 % de cobertura sin comprobar nada. Ejecuto todo y no verifico... ¡soy un genio!'],
+ ['M','Sos un genio del mal, Porcio. Esas pruebas sin aserciones se cazan con pruebas de mutación; de eso hablamos más adelante.'],
+ ['T','Herramientas: JUnit en Java, pytest en Python, Jest en JavaScript, NUnit y xUnit en .NET, Mockito para los dobles, y JaCoCo o Istanbul para medir cobertura.']
+ ],
+ recap:{pts:['Unidad = pieza más pequeña con comportamiento propio, aislada.','Mocks y stubs sustituyen dependencias (BD, red, reloj).','Rápidas (milisegundos) y localizan el defecto con precisión.','Patrón Preparar–Ejecutar–Comprobar (Arrange–Act–Assert).','Cobertura alta ≠ buenas pruebas.'],tools:['JUnit','pytest','Jest','NUnit / xUnit','Mockito','JaCoCo','Istanbul']},
+ qs:[
+ ['¿Qué es una «unidad» en una prueba unitaria?','La pieza más pequeña con comportamiento propio (función, método o clase)','Todo el sistema funcionando junto','Un equipo de personas que prueba','Un servidor de producción','Se prueba aislada del resto, normalmente con dobles.'],
+ ['¿Para qué sirven los mocks y stubs?','Para sustituir dependencias (base de datos, red, reloj) y aislar la unidad','Para acelerar el internet del equipo','Para generar la documentación automáticamente','Para atacar la aplicación en seguridad','Así la prueba depende solo del código que se quiere comprobar.'],
+ ['¿Qué verifica «assert aplicar_descuento(100, 20) == 80»?','Que con precio 100 y 20 % de descuento el resultado es 80','Que la base de datos guarda el número 80','Que la app soporta 100 usuarios durante 20 minutos','Que el botón de descuento se ve en pantalla','Es una aserción sobre una función: entradas 100 y 20, salida esperada 80.'],
+ ['Un equipo tiene 100 % de cobertura de código. ¿Qué se puede afirmar?','Que todas las líneas se ejecutaron, pero no que las pruebas sean buenas','Que no existe ningún defecto','Que el rendimiento es excelente','Que ya no hacen falta pruebas de integración','La cobertura mide ejecución, no la calidad de las comprobaciones.'],
+ ['¿Cuál es un marco de pruebas unitarias para Python?','pytest','JMeter','OWASP ZAP','BrowserStack','JMeter es de carga, ZAP de seguridad y BrowserStack de compatibilidad.'],
+ ['¿Qué caracteriza a las pruebas unitarias?','Son rapidísimas y localizan con precisión el defecto','Son lentas porque usan la base de datos real','Las ejecuta el cliente en producción','Requieren siempre un navegador real','Milisegundos por prueba y, si falla, el defecto está ahí mismito.']
+ ]},
+/* ---------- 3 ---------- */
+{t:'Que los bloques casen: integración y sistema',e:'🔗',place:'La pulpería de don Chepe',
+ scenes:[
+ ['M','Ya sabemos que cada bloque aguanta solo. ¿Pero encajan entre sí? Esa es la prueba de integración: comprueba que módulos o servicios colaboran bien (interfaces, base de datos, colas, contratos).'],
+ ['J','Les cuento: en 1999 la sonda Mars Climate Orbiter se perdió porque un equipo mandaba datos en unidades imperiales y otro los esperaba en métricas. Cada parte funcionaba; el fallo estaba en la unión.'],
+ ['P','¡Eso es como pedir un casado sin arroz y que la señora entienda «sin ajo»! Cada quien hizo bien lo suyo y salió mal.'],
+ ['A','Ejemplo real: el servicio de Pedidos guarda un pedido en PostgreSQL de verdad (levantado en un contenedor con Testcontainers) y publica un evento en Kafka. La prueba confirma que el registro existe y que el evento sale con el formato esperado.'],
+ ['E','Hay varias estrategias: Big Bang (todo junto, rápido de montar pero difícil de depurar), descendente (de arriba hacia abajo con stubs), ascendente (de abajo hacia arriba con drivers) y sándwich (mezcla de ambas).'],
+ ['M','En microservicios se usan las pruebas de contrato con Pact: el consumidor declara qué espera y el proveedor verifica que lo cumple, cada uno por su lado.'],
+ ['T','Subimos otro escalón: pruebas de sistema. Aquí se prueba el sistema completo e integrado, en un entorno parecido a producción (staging), contra los requisitos. Lo hace el equipo de QA, con caja negra.'],
+ ['J','Ejemplo: buscar un café, meterlo al carrito, pagar con la pasarela en modo sandbox, recibir el correo y generar la factura. Todo el recorrido, de punta a punta.'],
+ ['M','QA trabaja con plan de pruebas, casos, informe de defectos y la matriz de trazabilidad, que enlaza cada requisito con las pruebas que lo cubren. Y ojo: severidad es cuánto daña el defecto; prioridad es qué tan urgente es arreglarlo.'],
+ ['P','Un error de ortografía en el logo: severidad bajita, pero prioridad altísima porque lo ve todo el mundo.']
+ ],
+ recap:{pts:['Integración: las piezas correctas pueden fallar al unirse; el defecto vive en la interfaz.','Estrategias: Big Bang, descendente, ascendente, sándwich.','Contratos con Pact en microservicios.','Sistema: producto completo, en staging, contra requisitos (caja negra).','Matriz de trazabilidad · Severidad ≠ prioridad.'],tools:['Testcontainers','Spring Boot Test','WireMock','Pact','Postman','TestRail','Zephyr','Xray','qTest']},
+ qs:[
+ ['¿Qué buscan principalmente las pruebas de integración?','Fallos en la colaboración entre módulos o servicios (interfaces, contratos)','Fallos de ortografía en pantallas','La velocidad de la app con 5 000 usuarios','Vulnerabilidades en las dependencias','Como en Mars Climate Orbiter: cada parte bien, el fallo en la unión.'],
+ ['¿Qué estrategia de integración junta todos los módulos a la vez?','Big Bang','Sándwich','Descendente con stubs','Ascendente con drivers','Es rápida de montar, pero difícil de depurar porque no se sabe cuál falló.'],
+ ['¿Para qué se usa Pact?','Para pruebas de contrato entre consumidor y proveedor','Para medir la cobertura de código','Para generar carga con miles de usuarios','Para diseñar prototipos','El consumidor declara lo que espera y el proveedor lo verifica por separado.'],
+ ['¿Dónde se realizan normalmente las pruebas de sistema?','Sobre el sistema completo, en un entorno parecido a producción (staging)','Solo en la computadora de cada desarrollador','Únicamente sobre una función aislada','Directamente en producción con clientes reales','Se valida el sistema completo contra los requisitos, con caja negra.'],
+ ['Un error de ortografía en el logo de la portada es un defecto de…','Severidad baja y prioridad alta','Severidad alta y prioridad baja','Severidad alta y prioridad alta','Severidad baja y prioridad baja','Daña poco el funcionamiento, pero todo el mundo lo ve: hay que arreglarlo ya.'],
+ ['¿Qué enlaza la matriz de trazabilidad?','Cada requisito con los casos de prueba que lo cubren','Cada desarrollador con su salario','Cada servidor con su dirección IP','Cada bug con el cliente que lo reportó','Sirve para demostrar que ningún requisito quedó sin probar.']
+ ]},
+/* ---------- 4 ---------- */
+{t:'La nota del cliente: aceptación y BDD',e:'🤝',place:'Tarima de la Feria Verde, sábado temprano',
+ scenes:[
+ ['E','Buenas, mi gente. Ya pasó QA, pero falta la opinión de quien paga y de quien usa. Las pruebas de aceptación responden: ¿esto es lo que yo necesitaba? Es validación pura, y la decide el cliente.'],
+ ['P','Yo soy el cliente, mae. Y quiero que el café llegue «rápido».'],
+ ['M','«Rápido» no se puede probar, Porcio. Un criterio bien escrito es específico y medible: «la búsqueda devuelve resultados en menos de 2 segundos con 10 000 productos».'],
+ ['J','Hay varios tipos: UAT con usuarios finales en un entorno de prueba, alfa dentro de la empresa, beta con usuarios reales externos (como las versiones beta de las apps) y las contractuales o regulatorias.'],
+ ['code','Gherkin (BDD)','Característica: Retiro en cajero\n  Escenario: Saldo suficiente\n    Dado que mi saldo es 100 €\n    Cuando retiro 40 €\n    Entonces el cajero entrega 40 €\n    Y mi saldo pasa a ser 60 €'],
+ ['E','«Dado» es el contexto, «Cuando» es la acción y «Entonces» es el resultado esperado. Cualquier persona de negocio lo entiende sin saber programar.'],
+ ['A','Lo potente de BDD: ese mismo texto es requisito, documentación y prueba automatizable. Herramientas como Cucumber, SpecFlow o Behave conectan cada frase con código. Si el requisito cambia, la prueba falla hasta que el código se adapte.'],
+ ['M','Por eso la documentación no se queda vieja. También existen FitNesse y la gestión de pruebas con Jira más Xray.']
+ ],
+ recap:{pts:['Aceptación = validación por el cliente o usuario.','UAT · Alfa (interna) · Beta (externa) · Contractual/regulatoria.','Gherkin: Dado (contexto) · Cuando (acción) · Entonces (resultado).','Criterios específicos y medibles.','BDD: requisito + documentación + prueba automatizable.'],tools:['Cucumber','SpecFlow','Behave','FitNesse','Jira + Xray']},
+ qs:[
+ ['Las pruebas de aceptación responden a la pregunta…','¿Esto es lo que el cliente necesitaba? (validación)','¿Cuántas líneas de código se ejecutaron?','¿Cuál es el percentil 95 de respuesta?','¿Qué librerías tienen vulnerabilidades?','Es validación y la decide el cliente o usuario.'],
+ ['¿Qué es una prueba beta?','Prueba con usuarios reales externos a la empresa','Prueba hecha solo por el equipo de desarrollo','Prueba automática de una función','Prueba de instalación en un servidor','La alfa es dentro de la empresa; la beta, con usuarios reales externos.'],
+ ['En Gherkin, ¿qué representa la palabra «Dado»?','El contexto inicial','La acción del usuario','El resultado esperado','El nombre de la prueba','Dado = contexto, Cuando = acción, Entonces = resultado esperado.'],
+ ['¿Cuál es un criterio de aceptación bien escrito?','La búsqueda devuelve resultados en menos de 2 segundos con 10 000 productos','El sistema debe ser rápido','La app tiene que verse bonita','El usuario debería estar contento','Debe ser específico y medible; «rápido» no se puede comprobar.'],
+ ['¿Cuál es una herramienta típica de BDD?','Cucumber','k6','Burp Suite','Lighthouse','k6 es de carga, Burp de seguridad y Lighthouse de accesibilidad y rendimiento web.'],
+ ['¿Cuál es la gran ventaja de un escenario BDD?','Es a la vez requisito, documentación y prueba automatizable','Evita tener que programar','Reemplaza las pruebas de seguridad','Solo lo entienden los programadores','Si el requisito cambia, el escenario cambia y la prueba falla hasta que el código se adapte.']
+ ]},
+/* ---------- 5 ---------- */
+{t:'Clic va, clic viene: E2E y API',e:'🖱️',place:'Un cafetín con wifi en Escazú',
+ scenes:[
+ ['J','¡Pico, pico! Yo picoteo bugs. Las pruebas E2E, o de punta a punta, abren un navegador real o una app y hacen lo que haría una persona: escribir, pulsar, esperar y comprobar lo que aparece.'],
+ ['code','Playwright (JavaScript)',"test('login correcto', async ({ page }) => {\n  await page.goto('/login');\n  await page.fill('#email', 'ana@mail.com');\n  await page.fill('#clave', 's3creto');\n  await page.click('text=Entrar');\n  await expect(page).toHaveURL('/panel');\n});"],
+ ['M','Se lee como receta. La última línea es la aserción: la que convierte un guion en una prueba.'],
+ ['A','Pero ojo: son lentas y frágiles. Cambia un selector y se rompe. Por eso se dejan solo los 5 a 10 recorridos críticos: registro, login, compra y pago.'],
+ ['P','Mae, a mí una prueba me falla un día sí y otro no, sin tocar el código. ¡Está embrujada!'],
+ ['M','Eso es una prueba inestable, o flaky test. Hay que investigarla (esperas, datos, dependencias) porque destruye la confianza en toda la suite. Y para mantener orden se usa el patrón Page Object: encapsular selectores y acciones de cada página en una clase.'],
+ ['E','Para móvil: Appium (multiplataforma), Espresso en Android y XCUITest en iOS. En web: Playwright, Cypress, Selenium y TestCafe.'],
+ ['J','Pero si lo que querés es la lógica, te saltás la pantalla y llamás directo a la API. Son las pruebas de API, mucho más rápidas y estables.'],
+ ['code','REST Assured (Java)','given().header("Authorization", token).\nwhen().get("/usuarios/42").\nthen().statusCode(200)\n  .body("nombre", equalTo("Ana"))\n  .time(lessThan(500L));'],
+ ['A','Se valida el código de estado (200 correcto, 201 creado, 400 petición inválida, 401 sin autenticar, 404 no encontrado, 500 error del servidor), el JSON, los permisos y los tiempos. Y no olviden los casos negativos: token caducado, datos inválidos, campos obligatorios ausentes.'],
+ ['T','Herramientas de API: Postman con Newman, REST Assured, Karate, SoapUI, Insomnia y Pact.']
+ ],
+ recap:{pts:['E2E = recorrido completo como un usuario; solo los críticos (5–10).','Lentas y frágiles: cuidado con las pruebas inestables (flaky).','Patrón Page Object para mantener orden.','API: más rápidas y estables; validar estado, contenido, permisos y tiempos.','Incluir casos negativos.'],tools:['Playwright','Cypress','Selenium','Appium','Espresso','Postman / Newman','REST Assured','Karate','SoapUI']},
+ qs:[
+ ['¿Cuántas pruebas E2E conviene mantener?','Solo los recorridos críticos (unos 5 a 10)','Una por cada línea de código','Cientos, para cubrir todo','Ninguna, nunca sirven','Son lentas y frágiles: se reservan para registro, login, compra y pago.'],
+ ['¿Qué es una prueba inestable (flaky test)?','Una que a veces pasa y a veces falla sin cambios en el código','Una que siempre falla','Una que tarda un milisegundo','Una escrita en otro idioma','Hay que investigarla (esperas, datos, dependencias) porque destruye la confianza.'],
+ ['¿Qué hace el patrón Page Object?','Encapsula selectores y acciones de una página en una clase','Genera datos de prueba aleatorios','Ejecuta pruebas en paralelo en la nube','Mide la cobertura de ramas','Si cambia la interfaz, se corrige en un solo lugar.'],
+ ['¿Qué código HTTP significa que el recurso no se encontró?','404','401','201','500','401 es no autenticado, 201 creado y 500 error del servidor.'],
+ ['¿Cuál es un caso negativo de API?','Enviar un token caducado y esperar un 401','Consultar un usuario válido y esperar 200','Crear un pedido correcto y esperar 201','Medir que el servidor tenga memoria libre','Los casos negativos comprueban que el sistema rechaza correctamente lo inválido.'],
+ ['¿Para qué se usa Appium?','Para automatizar pruebas de apps móviles','Para escanear vulnerabilidades','Para medir el contraste de colores','Para generar carga con miles de usuarios','Es multiplataforma; Espresso es de Android y XCUITest de iOS.']
+ ]},
+/* ---------- 6 ---------- */
+{t:'Ni un chunche roto: regresión, humo y sanidad',e:'💨',place:'La oficina del equipo, viernes por la mañana',
+ scenes:[
+ ['M','Cada vez que cambiamos algo hay riesgo de romper otra cosa. Para eso existen tres niveles de pruebas de cambio, y mucha gente los confunde.'],
+ ['P','Yo los confundo todos, mae. Para mí «humo» es cuando se quema la tortilla.'],
+ ['M','Casi, Porcio. Humo viene de la electrónica: prender el aparato y ver si echa humo. Son muy pocas pruebas y muy rápidas: ¿arranca?, ¿puedo hacer login?, ¿se ve la pantalla principal? Si falla, se rechaza el build. Tras desplegar a staging, tardan unos 2 minutos.'],
+ ['J','Sanidad es una verificación focalizada de un arreglo. Si corregimos el cálculo del IVA, comprobamos rapidito que ese cálculo ya está bien antes de seguir con pruebas grandes.'],
+ ['A','Y regresión es reejecutar pruebas anteriores para asegurar que lo que funcionaba sigue funcionando. Tras tocar el IVA, revisamos carrito, facturas e informes, porque todos usan ese cálculo.'],
+ ['E','Como la regresión se repite una y otra vez, es candidata número uno a automatizar. Se prioriza por riesgo, se corre en cada commit con integración continua y completa cada noche.'],
+ ['T','Y la regla de oro, mae: cada bug que se corrige deja una prueba nueva, para que nunca vuelva a aparecer.'],
+ ['J','Se automatiza con Jenkins, GitHub Actions o GitLab CI, y las pruebas con Selenium, Playwright o TestNG.'],
+ ['P','¿O sea que si Knight Capital hubiera hecho una prueba de humo después de desplegar...?'],
+ ['M','Habrían tenido una buena oportunidad de ver que algo andaba mal antes de perder 440 millones. Buen punto, Porcio.']
+ ],
+ recap:{pts:['Humo: ¿arranca? Pocas pruebas, minutos.','Sanidad: ¿este arreglo funciona? Focalizada.','Regresión: ¿sigo sin romper nada? Amplia y automatizable.','Regla de oro: cada bug corregido deja una prueba nueva.','CI: ejecutar en cada commit; completa cada noche.'],tools:['Jenkins','GitHub Actions','GitLab CI','Selenium','Playwright','TestNG']},
+ qs:[
+ ['Tras desplegar a staging se comprueba en 2 minutos que la app arranca y se puede hacer login. Eso es…','Una prueba de humo','Una prueba de regresión completa','Una prueba de estrés','Una prueba de aceptación','Son pocas pruebas muy rápidas sobre lo esencial: si fallan, se rechaza el build.'],
+ ['Se corrigió el cálculo del IVA y se comprueba solo ese flujo antes de seguir. Eso es…','Una prueba de sanidad','Una prueba de humo','Una prueba de compatibilidad','Una prueba de mutación','Es una verificación focalizada de un arreglo concreto.'],
+ ['Tras tocar el IVA se revisan carrito, facturas e informes. Eso es…','Pruebas de regresión','Pruebas de humo','Pruebas de localización','Pruebas de carga','Se reejecutan pruebas previas para ver que lo que funcionaba sigue funcionando.'],
+ ['¿Cuál es la «regla de oro» tras corregir un bug?','Dejar una prueba nueva que impida que reaparezca','Borrar el reporte del bug','Cerrar el ticket sin más','Esperar a que alguien lo vuelva a reportar','Así el defecto no vuelve sin que nadie lo note.'],
+ ['¿Qué pruebas son las candidatas número uno a automatizar?','Las de regresión','Las exploratorias','Las de usabilidad con usuarios reales','Las de la primera idea del producto','Se repiten en cada cambio, así que automatizarlas ahorra muchísimo.'],
+ ['¿Qué herramienta sirve para ejecutar las pruebas automáticamente en cada commit?','Jenkins (integración continua)','Figma','Balsamiq','Hotjar','Jenkins, GitHub Actions y GitLab CI automatizan el pipeline.']
+ ]},
+/* ---------- 7 ---------- */
+{t:'Todos al estadio: pruebas de rendimiento',e:'🏟️',place:'Estadio Nacional... o sea, la tienda en Black Friday',
+ scenes:[
+ ['T','¡Llegó el Black Friday, mae! Y la app de CaféTico tiene más gente que el Estadio Nacional en una final. Las pruebas de rendimiento miden velocidad, estabilidad y capacidad bajo distintas cargas.'],
+ ['M','Cuatro tipos: carga, estrés, pico y resistencia. Carga es con la cantidad de usuarios esperada, por ejemplo 5 000 en hora pico.'],
+ ['A','Estrés es pasarse del límite para ver cómo falla y si se recupera. No solo cuándo se cae, sino cómo se cae.'],
+ ['P','Pico es cuando sacan la oferta a las 12 y todo el país entra a la vez, ¿verdad?'],
+ ['J','Exacto: pico (spike) es una subida brusca. Y resistencia (soak) es mantener carga durante horas para detectar fugas de memoria.'],
+ ['code','k6 (JavaScript)',"export const options = { vus: 200, duration: '5m',\n  thresholds: { http_req_duration: ['p(95)<500'] } };\nexport default function () {\n  http.get('https://tienda.test/api/productos');\n}"],
+ ['E','Son 200 usuarios virtuales durante 5 minutos, y la meta: el percentil 95 debe responder en menos de 500 milisegundos.'],
+ ['M','Se usa el percentil y no solo la media porque la media esconde a los usuarios que esperan muchísimo. Si el 5 % espera 10 segundos, esa gente se va.'],
+ ['T','Se prueba en un entorno parecido a producción, vigilando CPU, memoria y base de datos para encontrar el cuello de botella. Herramientas: JMeter, k6, Gatling, Locust, LoadRunner y Grafana para ver resultados.']
+ ],
+ recap:{pts:['Carga: usuarios esperados · Estrés: más allá del límite.','Pico (spike): subida brusca · Resistencia (soak): horas, detecta fugas de memoria.','Medir con percentiles (p95), no solo con la media.','Vigilar CPU, memoria y BD para hallar el cuello de botella.'],tools:['JMeter','k6','Gatling','Locust','LoadRunner','Grafana']},
+ qs:[
+ ['La oferta relámpago de las 12:00 genera una subida brusca de usuarios. ¿Qué prueba aplica?','Prueba de pico (spike)','Prueba de resistencia','Prueba de usabilidad','Prueba de localización','Pico es una subida repentina, como el Black Friday.'],
+ ['¿Qué prueba de rendimiento detecta fugas de memoria?','Resistencia (soak): carga sostenida durante horas','Una carga ligera de un minuto','Humo','Pruebas de contrato','Con carga sostenida, la memoria que no se libera termina apareciendo.'],
+ ['¿Qué busca una prueba de estrés?','Superar el límite para ver cómo falla y si se recupera','Medir cuántos usuarios están contentos','Comprobar el contraste del texto','Verificar permisos de acceso','No solo cuándo se cae, sino cómo se cae.'],
+ ['Un umbral p(95)<500 ms significa que…','El 95 % de las peticiones responde en menos de 500 ms','Todas las peticiones tardan exactamente 500 ms','Hay 95 usuarios virtuales','El servidor tiene 95 % de CPU libre','El percentil 95 deja fuera solo al 5 % más lento.'],
+ ['¿Cuál es una herramienta de pruebas de carga?','k6 (o JMeter)','Cucumber','Appium','SonarQube','Cucumber es BDD, Appium móvil y SonarQube análisis estático.'],
+ ['¿Por qué se usa el percentil en vez de solo la media?','Porque la media esconde a los usuarios que esperan muchísimo','Porque es más fácil de calcular','Porque la media siempre es mayor','Porque el cliente lo exige por contrato','Si el 5 % espera 10 s, esa gente se va aunque el promedio se vea bien.']
+ ]},
+/* ---------- 8 ---------- */
+{t:'Cuidado con los vivillos: seguridad',e:'🔐',place:'Bochinche en la oficina: alguien intentó entrar a la base de datos',
+ scenes:[
+ ['M','Tenemos que encontrar las vulnerabilidades antes que los malos. La referencia es el OWASP Top 10, la lista de los riesgos más críticos en aplicaciones web.'],
+ ['P','Mae, yo escribí esto en el login: \' OR \'1\'=\'1 ... ¡y entré sin clave!'],
+ ['A','Porcio, eso es una inyección SQL: si la app pega tu texto directo en la consulta, la condición queda siempre verdadera. Se evita con consultas parametrizadas.'],
+ ['J','Hay cuatro enfoques. SAST: análisis estático, revisa el código fuente sin ejecutarlo. DAST: análisis dinámico, ataca la app en ejecución desde fuera.'],
+ ['E','SCA es análisis de dependencias: detecta librerías con vulnerabilidades conocidas. El ejemplo famoso es Log4Shell, en diciembre de 2021, en la librería de registro Log4j.'],
+ ['M','Y el pentest es una auditoría manual hecha por expertos, siempre con autorización escrita. Atacar sin permiso es delito.'],
+ ['T','Herramientas: OWASP ZAP y Burp Suite para DAST, SonarQube para SAST, Snyk y Dependabot para dependencias, Nessus para escanear vulnerabilidades.'],
+ ['A','Y se hace shift-left: probar seguridad desde que se escribe el código, no cuando ya está en producción.']
+ ],
+ recap:{pts:['OWASP Top 10: referencia de riesgos web.','SAST (código) · DAST (en ejecución) · SCA (dependencias) · Pentest (manual).','Inyección SQL: se evita con consultas parametrizadas.','Pentest solo con autorización escrita.','Shift-left: probar seguridad desde el inicio.'],tools:['OWASP ZAP','Burp Suite','SonarQube','Snyk','Dependabot','Nessus']},
+ qs:[
+ ['¿Qué hace SAST?','Analiza el código fuente sin ejecutar la app','Ataca la app en ejecución desde fuera','Mide el tiempo de respuesta bajo carga','Prueba compatibilidad en navegadores','Es análisis estático de seguridad, por ejemplo con SonarQube.'],
+ ['¿Qué hace DAST?','Ataca la aplicación en ejecución como lo haría un atacante externo','Revisa el código sin ejecutarlo','Busca librerías con CVE en el repositorio','Valida los criterios de aceptación','Un ejemplo de herramienta es OWASP ZAP.'],
+ ['Log4Shell (2021) fue un fallo en una librería usada por millones de apps. ¿Qué enfoque lo detecta mejor?','SCA (análisis de dependencias), con herramientas como Snyk o Dependabot','Pruebas de usabilidad','Pruebas de humo','Pruebas de localización','SCA detecta componentes con vulnerabilidades conocidas (CVE).'],
+ ['Escribir \' OR \'1\'=\'1 en un login es un intento de…','Inyección SQL; se evita con consultas parametrizadas','Prueba de carga; se evita con más servidores','Prueba de accesibilidad; se evita con más contraste','Prueba de compatibilidad; se evita con más navegadores','La condición queda siempre verdadera si la consulta se arma pegando texto.'],
+ ['¿Qué necesita un pentest para ser legal?','Autorización escrita','Que el sistema sea de otra empresa','Hacerse a escondidas','Que sea un viernes','Atacar sin permiso es delito.'],
+ ['¿Qué herramienta se usa para pruebas dinámicas de seguridad (DAST)?','OWASP ZAP','JUnit','Lighthouse','Testcontainers','JUnit es de unitarias, Lighthouse de accesibilidad y Testcontainers de integración.']
+ ]},
+/* ---------- 9 ---------- */
+{t:'Para todas y todos: usabilidad, accesibilidad y compatibilidad',e:'♿',place:'Feria del Agricultor, un sábado en la mañana',
+ scenes:[
+ ['M','Una app rápida y segura igual puede fracasar si no se entiende, o si algunas personas no pueden usarla.'],
+ ['E','La usabilidad mide si un usuario logra su objetivo con eficacia, eficiencia y satisfacción. Nielsen mostró que con unos 5 usuarios se detecta como el 85 % de los problemas, por eso es mejor hacer varias rondas pequeñas.'],
+ ['J','También está la evaluación heurística con las 10 heurísticas de Nielsen, y los tests A/B: se muestran dos versiones a grupos distintos y se mide cuál convierte mejor.'],
+ ['A','La accesibilidad se guía por WCAG 2.2: contraste mínimo de 4,5:1 en el texto, todo usable con teclado, texto alternativo en imágenes y compatibilidad con lectores de pantalla.'],
+ ['P','Mae, mi botón «Comprar» está gris clarito sobre blanco, bien elegante. Mi mamá no lo ve.'],
+ ['M','Porcio, eso es contraste 1,6:1: pasa lo funcional pero falla accesibilidad y usabilidad. Herramientas: Lighthouse, axe DevTools, WAVE, y lectores de pantalla como NVDA o VoiceOver.'],
+ ['T','Ahora compatibilidad: navegadores, sistemas operativos, tamaños de pantalla. Es imposible probar todo, así que se define una matriz con los dispositivos que concentran el 90 % del tráfico, según la analítica.'],
+ ['J','BrowserStack, Sauce Labs y LambdaTest ofrecen dispositivos reales en la nube. Y la localización: idiomas, monedas, fechas. 03/04/2025 es 3 de abril aquí y 4 de marzo en Estados Unidos.'],
+ ['E','Y están las pruebas de instalación y migración: instalar, actualizar, desinstalar y migrar los datos de la versión anterior sin perder pedidos.']
+ ],
+ recap:{pts:['Usabilidad: ~5 usuarios detectan ~85 % de los problemas; varias rondas pequeñas.','WCAG 2.2: contraste 4,5:1, teclado, texto alternativo, lectores de pantalla.','A/B: dos versiones, grupos distintos.','Matriz de compatibilidad con el ~90 % del tráfico.','Localización: idioma, moneda, formato de fecha.'],tools:['Lighthouse','axe DevTools','WAVE','NVDA / VoiceOver','Hotjar','BrowserStack','Sauce Labs','LambdaTest']},
+ qs:[
+ ['¿Cuál es el contraste mínimo recomendado para texto (nivel AA de WCAG)?','4,5:1','1,6:1','2:1','10:1','Un botón gris claro sobre blanco con 1,6:1 no pasa.'],
+ ['Según Nielsen, ¿cuántos usuarios detectan aproximadamente el 85 % de los problemas de usabilidad?','Unos 5','1 000','50','Ninguno: solo los expertos','Por eso conviene hacer varias rondas pequeñas.'],
+ ['¿Qué es un test A/B?','Mostrar dos versiones a grupos distintos y medir cuál funciona mejor','Probar solo en dos navegadores','Comparar dos servidores de base de datos','Revisar dos veces el código','Sirve para decidir con datos entre dos diseños.'],
+ ['¿Para qué sirven BrowserStack o Sauce Labs?','Para probar en muchos navegadores y dispositivos reales en la nube','Para escanear contraseñas filtradas','Para escribir criterios de aceptación','Para medir la cobertura de ramas','Son granjas de dispositivos para pruebas de compatibilidad.'],
+ ['¿Cómo se decide en qué dispositivos probar?','Con una matriz de los que concentran ~90 % del tráfico según la analítica','Con los que tiene el jefe en la casa','Probando solo en el computador del desarrollador','Al azar cada semana','No se puede probar todo: se prioriza con datos reales.'],
+ ['La fecha 03/04/2025 es 3 de abril en España y 4 de marzo en EE. UU. ¿Con qué tipo de prueba se relaciona?','Localización (i18n / l10n)','Rendimiento','Seguridad','Mutación','Incluye idioma, moneda, formato de fecha y hasta escritura de derecha a izquierda.']
+ ]},
+/* ---------- 10 ---------- */
+{t:'El arte de elegir: técnicas de diseño de casos',e:'🧠',place:'La pizarra de la soda, a la hora del almuerzo',
+ scenes:[
+ ['M','No podemos probar todas las combinaciones: un campo de edad acepta millones de valores. Las técnicas de diseño nos dicen cuáles probar. Y esto cae en exámenes, mae.'],
+ ['A','Primero, partición de equivalencia: dividimos en grupos que el sistema trata igual y probamos un representante de cada uno. Para «edad válida de 18 a 65»: 10 (inválida), 30 (válida) y 80 (inválida).'],
+ ['E','Segundo, valores límite: los errores se acumulan en las fronteras, típicamente por confundir «menor que» con «menor o igual». Se prueba justo en el límite y a cada lado: 17, 18, 19 y 64, 65, 66.'],
+ ['P','¡Yo siempre pruebo 18 y ya! ¿Por qué más?'],
+ ['M','Porque si el programador escribió «mayor que 18» en vez de «mayor o igual», justo el 18 falla; el 17 y el 19 confirman dónde queda la frontera.'],
+ ['J','Tercero, tabla de decisión: cuando el resultado depende de varias condiciones combinadas. Cliente VIP y compra mayor a 100 €: cuatro combinaciones, cada una con su descuento (20 %, 10 %, 5 % o 0 %). Se prueba cada fila.'],
+ ['T','Cuarto, transición de estados: el pedido pasa de Creado a Pagado, Enviado y Entregado. Se prueban las transiciones válidas y las inválidas, como volver de Entregado a Creado.'],
+ ['A','Quinto, pairwise: con navegador × sistema × idioma × tipo de usuario las combinaciones explotan. Pairwise cubre todos los pares de valores con muchos menos casos, apoyado en estudios que dicen que la mayoría de los fallos nacen de la interacción de uno o dos parámetros.'],
+ ['M','Herramientas: PICT de Microsoft, AllPairs, Hexawise y TestRail para organizar.']
+ ],
+ recap:{pts:['Partición de equivalencia: un representante por grupo.','Valores límite: justo en la frontera y a cada lado (17, 18, 19 · 64, 65, 66).','Tabla de decisión: condiciones combinadas.','Transición de estados: válidas e inválidas.','Pairwise: todos los pares con menos casos.'],tools:['PICT','AllPairs','Hexawise','TestRail']},
+ qs:[
+ ['Para el campo «edad válida de 18 a 65», ¿cuáles son los valores límite?','17, 18, 19, 64, 65 y 66','10, 30 y 80','0 y 100','18 y 65 solamente','Se prueba justo en el límite y a cada lado.'],
+ ['¿En qué consiste la partición de equivalencia?','Dividir los datos en grupos que se tratan igual y probar un representante de cada uno','Probar todos los valores posibles','Probar solo el valor máximo','Dividir el equipo en dos','Para 18–65: 10 (inválida), 30 (válida), 80 (inválida).'],
+ ['¿Cuándo conviene una tabla de decisión?','Cuando el resultado depende de varias condiciones combinadas','Cuando solo hay un campo de texto','Para medir tiempos de carga','Para escanear vulnerabilidades','Ej.: cliente VIP y compra mayor a 100 €: cuatro combinaciones, cuatro resultados.'],
+ ['En un pedido (Creado → Pagado → Enviado → Entregado), ¿qué transición debe probarse como inválida?','Entregado → Creado','Creado → Pagado','Pagado → Enviado','Enviado → Entregado','La técnica prueba tanto las transiciones válidas como las inválidas.'],
+ ['¿Qué logra pairwise?','Cubrir todos los pares de valores con muchos menos casos que todas las combinaciones','Probar todas las combinaciones posibles','Eliminar la necesidad de casos de prueba','Medir el rendimiento de pares de servidores','Se apoya en que la mayoría de fallos nacen de la interacción de uno o dos parámetros.'],
+ ['Una contraseña debe tener entre 8 y 16 caracteres. ¿Qué valores límite se prueban?','7, 8, 9, 15, 16 y 17','1, 10 y 100','8 y 16 solamente','0, 8, 16 y 20','Justo en el límite y a cada lado.']
+ ]},
+/* ---------- 11 ---------- */
+{t:'Olfato de QA: exploratorias, TDD, mutación y caos',e:'🐒',place:'La terraza de la soda al atardecer',
+ scenes:[
+ ['J','En las pruebas exploratorias la persona aprende, diseña y ejecuta al mismo tiempo. Se organiza en sesiones con una carta (charter), por ejemplo «explorar el pago con tarjetas caducadas», de 60 a 90 minutos, anotando hallazgos.'],
+ ['P','¡Esa es mi especialidad, mae! Ponerle 10 000 caracteres al campo del nombre, emojis, comillas... eso se llama error guessing.'],
+ ['M','Y un buen reporte de defecto lleva: título claro, pasos para reproducir, resultado esperado frente al obtenido, entorno, evidencia y severidad. Su ciclo es Nuevo, Asignado, Corregido, Verificado y Cerrado.'],
+ ['A','Ahora cambiamos el orden con TDD: rojo, verde, refactor. Escribo una prueba que falla, el código mínimo para pasarla y después mejoro el diseño sin romper nada. Con BDD se describe el comportamiento en lenguaje de negocio, y con ATDD los criterios de aceptación se acuerdan antes de programar.'],
+ ['E','¿Y las pruebas son buenas? Las pruebas de mutación lo revisan: una herramienta mete errores deliberados en el código (cambia un > por >=) y mira si alguna prueba falla. Si el mutante sobrevive, la prueba era débil. Herramientas: PIT, Stryker y mutmut.'],
+ ['T','La ingeniería del caos nació en Netflix con Chaos Monkey: se apagan componentes a propósito, con un radio de impacto controlado, para validar que el sistema resiste. También existen Gremlin y Litmus.'],
+ ['M','Y en recuperación hay dos siglas: RTO, el tiempo máximo que el servicio puede estar caído, y RPO, la cantidad de datos que se acepta perder. Pregunta: ¿alguien ha probado restaurar sus copias de seguridad?'],
+ ['P','Yo hago respaldos todas las noches... pero nunca los he restaurado. ¿Cuenta?'],
+ ['J','No cuenta, Porcio. Una copia que nunca se restauró es una esperanza, no un respaldo.']
+ ],
+ recap:{pts:['Exploratorias: carta, 60–90 min, aprender + diseñar + ejecutar.','Buen reporte de defecto: pasos, esperado vs obtenido, entorno, evidencia, severidad.','TDD: rojo → verde → refactor.','Mutación: errores deliberados; mutante vivo = prueba débil.','Caos: experimentos controlados · RTO (tiempo caído) · RPO (datos perdidos).'],tools:['Jira','TestRail','PIT','Stryker','mutmut','Chaos Monkey','Gremlin','Litmus']},
+ qs:[
+ ['¿Qué caracteriza a una sesión de pruebas exploratorias?','Aprender, diseñar y ejecutar a la vez, con una carta y tiempo limitado','Seguir un guion cerrado sin desviarse','Ejecutar solo pruebas automáticas','No tomar notas','Son sesiones de 60 a 90 minutos con un objetivo concreto (charter).'],
+ ['¿Cuál es el ciclo de TDD?','Rojo → Verde → Refactor','Verde → Rojo → Azul','Diseñar → Entregar → Olvidar','Código → Despliegue → Prueba','Prueba que falla, código mínimo para pasarla y mejora del diseño.'],
+ ['¿Qué comprueban las pruebas de mutación?','Si las pruebas detectan errores deliberados metidos en el código','Cuántos usuarios soporta el sistema','Si el diseño es accesible','Si las dependencias tienen CVE','Si el mutante sobrevive, la prueba era débil. Herramientas: PIT, Stryker, mutmut.'],
+ ['¿Qué hace la ingeniería del caos (Chaos Monkey)?','Apaga componentes a propósito, de forma controlada, para validar la resiliencia','Genera código aleatorio para el producto','Borra las pruebas viejas','Cambia el diseño cada semana','Nació en Netflix. Se parte de una hipótesis y se hace un experimento controlado.'],
+ ['¿Qué significa RPO?','La cantidad de datos que se acepta perder tras un incidente','El tiempo máximo que el servicio puede estar caído','El número de pruebas por objetivo','La prioridad de los pendientes','El tiempo máximo caído es el RTO.'],
+ ['¿Qué debe llevar un buen reporte de defecto?','Pasos para reproducir, resultado esperado vs obtenido, entorno, evidencia y severidad','Solo «no funciona el pago»','El nombre del culpable','Una captura y nada más','Un reporte reproducible se corrige en minutos.']
+ ]},
+/* ---------- 12 FINAL ---------- */
+{t:'La Final: lanzamiento en la Feria Verde',e:'🏆',place:'Feria Verde, sábado, 7:00 a. m.',final:true,
+ scenes:[
+ ['T','¡Llegó el día, mae! Feria Verde, sábado, 7 de la mañana. Antes de lanzar, repasemos cómo se conectan todas las pruebas en un pipeline de CI/CD.'],
+ ['M','Cada commit dispara pruebas unitarias y análisis estático (SAST). Si pasan, se hace el build; luego integración y API; después, en staging, E2E y carga; y solo entonces producción, con monitoreo.'],
+ ['A','Lo rápido y barato va primero. Eso es fail fast: fallar pronto para ahorrar tiempo y plata.'],
+ ['E','Integración continua es integrar el código de todos varias veces al día con verificación automática. Entrega continua es tener siempre el software listo para desplegar con un botón.'],
+ ['P','Mae, entonces ya lo probamos todo, ¿verdad? ¿Lanzamos?'],
+ ['J','Falta una última ronda: el repaso final. Contesten bien y CaféTico sale pura vida.']
+ ],
+ recap:{pts:['Pipeline: commit → unitarias + SAST → build → integración/API → staging (E2E + carga) → producción + monitoreo.','Fail fast: lo rápido y barato primero.','CI = integrar y verificar a menudo · CD = siempre listo para desplegar.','No hay una prueba mejor que otra: hay una combinación adecuada al riesgo.'],tools:['GitHub Actions','Jenkins','GitLab CI','SonarQube','Playwright','k6']},
+ qs:[
+ ['¿Cuál es el orden típico de un pipeline CI/CD?','Commit → unitarias + SAST → build → integración/API → staging (E2E + carga) → producción con monitoreo','Producción → build → commit → pruebas','E2E → commit → unitarias → build','Aceptación → commit → despliegue → unitarias','Lo rápido y barato primero; lo lento y costoso después.'],
+ ['¿Qué significa «fail fast»?','Ejecutar primero lo rápido y barato para detectar fallos lo antes posible','Terminar el proyecto lo más rápido posible','Aceptar los fallos sin corregirlos','Fallar a propósito en producción siempre','Ahorra tiempo y plata.'],
+ ['¿Cuál es la diferencia entre integración continua y entrega continua?','CI integra y verifica el código a menudo; CD mantiene el software siempre listo para desplegar','Son exactamente lo mismo','CI es solo para móviles y CD solo para web','CI es manual y CD es automática','CI = integrar con verificación automática varias veces al día.']
+ ]}
+];
+
+/* ============================ ESTADO ============================ */
+var KEY='cafetico-v1';
+var S={best:{},sec:0,seen:{}};
+try{var raw=localStorage.getItem(KEY);if(raw){var o=JSON.parse(raw);if(o&&o.best){S=o;S.seen=S.seen||{};}}}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+var run=null; // estado de la partida en curso
+var app=document.getElementById('app');
+var ticking=true;
+setInterval(function(){S.sec++;if(S.sec%10===0)save();updHud();},1000);
+function fmt(s){var m=Math.floor(s/60),r=s%60;return (m<10?'0':'')+m+':'+(r<10?'0':'')+r;}
+function totalPts(){var t=0;for(var k in S.best)t+=S.best[k].pts;return t;}
+function totalStars(){var t=0;for(var k in S.best)t+=S.best[k].stars;return t;}
+function updHud(extra){document.getElementById('htime').textContent='⏱ '+fmt(S.sec);document.getElementById('hscore').textContent='⭐ '+(totalPts()+(run?run.pts:0));}
+function setLevel(txt){document.getElementById('hlevel').textContent=txt||'';}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
+function pick(a){return a[Math.floor(Math.random()*a.length)];}
+function unlocked(i){return i===0||!!S.best[i-1];}
+
+/* Construye preguntas con la respuesta correcta en posiciones balanceadas (A–D) */
+function buildQs(arr){
+  var perm=shuffle([0,1,2,3]),pos=[];for(var i=0;i<arr.length;i++)pos.push(perm[i%4]);pos=shuffle(pos);
+  return arr.map(function(q,idx){
+    var wrong=shuffle([q[2],q[3],q[4]]),opts=[],w=0,p=pos[idx];
+    for(var k=0;k<4;k++)opts.push(k===p?{t:q[1],ok:true}:{t:wrong[w++],ok:false});
+    return {q:q[0],opts:opts,e:q[5]};
+  });
+}
+function finalPool(){
+  var pool=[];LV.forEach(function(l,i){if(!l.final)l.qs.forEach(function(q){pool.push(q);});});
+  return LV[11].qs.concat(shuffle(pool).slice(0,7));
+}
+
+/* ============================ PANTALLAS ============================ */
+function title(){
+  run=null;setLevel('');updHud();
+  var cont=Object.keys(S.best).length>0;
+  var cast=Object.keys(CH).map(function(k){var c=CH[k];return '<span class="mini"><span class="av" style="background:'+c.c+'33;border:2px solid '+c.c+'">'+c.e+'</span>'+c.n+'</span>';}).join('');
+  app.innerHTML='<div class="hero pop"><div class="kick">Gestión de software · Pruebas de software</div>'+
+   '<h1>☕ CaféTico:<br><em>el juego de las pruebas</em></h1>'+
+   '<p style="font-size:19px;max-width:680px;margin-top:14px">El equipo de CaféTico lanza su app de café y tamales en la Feria Verde... y nadie ha probado nada. ¡Diay, mae! Ayudalos a aprender <b>todos los tipos de pruebas de software</b> con ejemplos, código y herramientas reales, y después demostrá lo que aprendiste.</p>'+
+   '<div class="cast-row">'+cast+'</div>'+
+   '<div class="card" style="max-width:700px"><h3 style="margin-top:0">Cómo se juega (≈ 60 minutos)</h3><ul class="recap" style="list-style:disc">'+
+   '<li><b>12 niveles</b> (portemas): en cada uno primero leés la <b>teoría</b> como un cuento y luego contestás <b>6 preguntas</b>.</li>'+
+   '<li>Tenés <b>3 vidas ❤️</b> por nivel y un comodín <b>🌶️ Salsa Lizano 50/50</b>.</li>'+
+   '<li>Las opciones se <b>revuelven</b> siempre: la respuesta correcta cae en A, B, C o D al azar.</li>'+
+   '<li>Ganás estrellas ⭐ según tus errores y puntos por racha. Al final recibís tu <b>rango de QA</b>.</li></ul></div>'+
+   '<div class="row" style="margin-top:20px">'+
+   '<button class="btn red" id="go">'+(cont?'▶ Continuar la aventura':'▶ ¡Dale, mae!')+'</button>'+
+   (cont?'<button class="btn ghost" id="reset">Empezar de cero</button>':'')+'</div>'+
+   '<p class="disc">🎭 Parodia educativa: los personajes (Toledo, Julián el Tucán, Araya Bloks, Edgar Silva, Melissa Mora y Porcionzon) aparecen como <b>caricaturas ficticias</b> inventadas para este juego. Los diálogos y las frases no son declaraciones reales de esas personas.</p></div>';
+  document.getElementById('go').onclick=map;
+  var r=document.getElementById('reset');if(r)r.onclick=function(){if(confirm('¿Borrar todo tu progreso?')){S={best:{},sec:0,seen:{}};save();title();}};
+}
+
+function map(){
+  run=null;setLevel('Mapa de niveles');updHud();
+  var done=Object.keys(S.best).length,pct=Math.round(done/LV.length*100);
+  var h='<div class="pop"><h2>🗺️ Mapa de niveles</h2><p class="mut">Completá cada nivel para abrir el siguiente. Podés repetirlos para mejorar tus estrellas.</p>'+
+    '<div class="row" style="margin:10px 0 18px"><div class="bar" style="flex:1;min-width:200px"><i style="width:'+pct+'%"></i></div><span class="small">'+done+' / '+LV.length+' niveles · '+totalStars()+' ⭐ de '+LV.length*3+'</span></div><div class="grid">';
+  LV.forEach(function(l,i){
+    var b=S.best[i],lock=!unlocked(i),st=b?'★'.repeat(b.stars)+'☆'.repeat(3-b.stars):'☆☆☆';
+    h+='<button class="lv '+(lock?'lock':'')+(b?' done':'')+'" data-i="'+i+'" '+(lock?'disabled':'')+'><div class="n">'+(l.final?'FINAL':'NIVEL '+(i+1))+'</div><div class="e">'+(lock?'🔒':l.e)+'</div><b>'+esc(l.t)+'</b><div class="stars">'+st+'</div></button>';
+  });
+  h+='</div><div class="row" style="margin-top:20px"><button class="btn ghost" id="home">⌂ Inicio</button></div></div>';
+  app.innerHTML=h;
+  [].forEach.call(app.querySelectorAll('.lv:not(.lock)'),function(b){b.onclick=function(){levelIntro(+b.dataset.i);};});
+  document.getElementById('home').onclick=title;
+}
+
+function levelIntro(i){
+  var l=LV[i];run={i:i,pts:0};setLevel((l.final?'Final':'Nivel '+(i+1))+' · '+l.t);updHud();
+  var seen=S.seen[i];
+  app.innerHTML='<div class="card center pop" style="padding:34px 20px"><div class="big">'+l.e+'</div><div class="small" style="letter-spacing:.14em;text-transform:uppercase;color:var(--gold);font-weight:800;margin-top:8px">'+(l.final?'Nivel final':'Nivel '+(i+1)+' de '+(LV.length-1))+'</div>'+
+   '<h2 style="margin:6px 0">'+esc(l.t)+'</h2><p class="mut">📍 '+esc(l.place)+'</p>'+
+   '<div class="row" style="justify-content:center;margin-top:18px"><button class="btn red" id="th">📖 Empezar con la teoría</button>'+
+   (seen?'<button class="btn ghost" id="sk">⏭ Ir directo a las preguntas</button>':'')+'<button class="btn ghost" id="bk">← Mapa</button></div></div>';
+  document.getElementById('th').onclick=function(){scene(i,0);};
+  var sk=document.getElementById('sk');if(sk)sk.onclick=function(){startQuiz(i);};
+  document.getElementById('bk').onclick=map;
+}
+
+/* ----- teoría (cuento) ----- */
+var typer=null;
+function scene(i,k){
+  var l=LV[i],sc=l.scenes[k];clearInterval(typer);
+  var who=sc[0]==='code'?(l.scenes[k-1]?l.scenes[k-1][0]:'T'):sc[0];
+  var c=CH[who];
+  var dots=l.scenes.map(function(_,x){return '<i class="'+(x<k?'on':x===k?'cur':'')+'"></i>';}).join('');
+  app.innerHTML='<div class="stage pop" style="--c:'+c.c+'"><div class="place">📍 '+esc(l.place)+' · escena '+(k+1)+' de '+l.scenes.length+'</div>'+
+   '<div class="talk"><div class="who"><div class="av">'+c.e+'</div><b>'+c.n+'</b></div><div class="bubble" id="bub"><span id="tx"></span><div id="cd"></div></div></div>'+
+   '<div class="ctrl"><button class="btn ghost" id="pv" '+(k===0?'disabled':'')+'>◀</button><div class="dots">'+dots+'</div><button class="btn" id="nx">'+(k===l.scenes.length-1?'Ver resumen ▶':'Siguiente ▶')+'</button></div></div>';
+  var text=sc[0]==='code'?sc[1]:sc[1],tx=document.getElementById('tx'),cd=document.getElementById('cd'),done=false;
+  function finish(){clearInterval(typer);done=true;
+    if(sc[0]==='code'){tx.innerHTML='<span class="ct">🧑‍🏫 En la pizarra · '+esc(sc[1])+'</span>';cd.innerHTML='<pre>'+esc(sc[2])+'</pre>';}
+    else tx.textContent=sc[1];
+  }
+  if(sc[0]==='code'){finish();}
+  else{var n=0;typer=setInterval(function(){n+=2;tx.textContent=sc[1].slice(0,n);if(n>=sc[1].length){clearInterval(typer);done=true;}},16);}
+  document.getElementById('bub').onclick=function(){if(!done)finish();};
+  function next(){if(!done){finish();return;}clearInterval(typer);if(k<l.scenes.length-1)scene(i,k+1);else recap(i);}
+  document.getElementById('nx').onclick=next;
+  document.getElementById('pv').onclick=function(){if(k>0)scene(i,k-1);};
+  sceneKey=function(e){if(e.key==='ArrowRight'||e.key===' '||e.key==='Enter'){e.preventDefault();next();}else if(e.key==='ArrowLeft'&&k>0){scene(i,k-1);}};
+}
+var sceneKey=null,quizKey=null;
+document.addEventListener('keydown',function(e){if(sceneKey&&document.querySelector('.stage'))sceneKey(e);if(quizKey&&document.querySelector('.opts'))quizKey(e);});
+
+function recap(i){
+  var l=LV[i];sceneKey=null;S.seen[i]=1;save();
+  app.innerHTML='<div class="card pop"><h2>📝 Resumen del nivel</h2><p class="mut">Lo esencial antes de las preguntas:</p><ul class="recap" style="list-style:disc">'+
+   l.recap.pts.map(function(p){return '<li>'+esc(p)+'</li>';}).join('')+'</ul><h3>🧰 Herramientas que salieron</h3><div>'+
+   l.recap.tools.map(function(t){return '<span class="chip">'+esc(t)+'</span>';}).join('')+'</div>'+
+   '<div class="row" style="margin-top:22px"><button class="btn red" id="q">🎯 ¡A las preguntas!</button><button class="btn ghost" id="re">↺ Repasar la teoría</button></div></div>';
+  document.getElementById('q').onclick=function(){startQuiz(i);};
+  document.getElementById('re').onclick=function(){scene(i,0);};
+}
+
+/* ----- preguntas ----- */
+function startQuiz(i){
+  var l=LV[i];sceneKey=null;
+  run={i:i,pts:0,lives:3,idx:0,ok:0,wrong:0,streak:0,hint:true,qs:buildQs(l.final?finalPool():shuffle(l.qs)),answered:false};
+  setLevel((l.final?'Final':'Nivel '+(i+1))+' · Preguntas');showQ();
+}
+function showQ(){
+  var r=run,q=r.qs[r.idx],L='ABCD';r.answered=false;
+  var hearts='❤️'.repeat(r.lives)+'🖤'.repeat(3-r.lives);
+  app.innerHTML='<div class="pop"><div class="qtop"><span class="pill">Pregunta '+(r.idx+1)+' / '+r.qs.length+'</span><span class="hearts">'+hearts+'</span><span class="pill">🔥 Racha '+r.streak+'</span><span class="sp"></span><button class="btn ghost" id="h5" style="padding:8px 14px;font-size:15px" '+(r.hint?'':'disabled')+'>🌶️ Salsa Lizano 50/50</button></div>'+
+   '<div class="bar" style="margin-bottom:16px"><i style="width:'+(r.idx/r.qs.length*100)+'%"></i></div>'+
+   '<div class="card"><div class="q">'+esc(q.q)+'</div><div class="opts" id="opts">'+
+   q.opts.map(function(o,k){return '<button class="opt" data-k="'+k+'"><span class="l">'+L[k]+'</span><span>'+esc(o.t)+'</span></button>';}).join('')+
+   '</div><div id="fb"></div></div></div>';
+  [].forEach.call(app.querySelectorAll('.opt'),function(b){b.onclick=function(){answer(+b.dataset.k);};});
+  document.getElementById('h5').onclick=function(){
+    if(!r.hint||r.answered)return;r.hint=false;this.disabled=true;
+    var wr=[];q.opts.forEach(function(o,k){if(!o.ok)wr.push(k);});
+    shuffle(wr).slice(0,2).forEach(function(k){var b=app.querySelector('.opt[data-k="'+k+'"]');b.classList.add('gone');b.disabled=true;});
+  };
+  quizKey=function(e){
+    var m={a:0,b:1,c:2,d:3,'1':0,'2':1,'3':2,'4':3}[e.key.toLowerCase()];
+    if(m!==undefined&&!r.answered){var b=app.querySelector('.opt[data-k="'+m+'"]');if(b&&!b.disabled)answer(m);}
+    else if(r.answered&&(e.key==='Enter'||e.key===' ')){e.preventDefault();var n=document.getElementById('nq');if(n)n.click();}
+  };
+  updHud();
+}
+var GOOD=['¡Pura vida, mae!','¡Tuanis!','¡Qué chiva!','¡Buenísimo!','¡Con toda!'],BAD=['¡Diay, casi!','¡Upe!, no era.','¡Qué torta!','Ay, mae...','Tranquilo, así se aprende.'];
+function answer(k){
+  var r=run,q=r.qs[r.idx];if(r.answered)return;r.answered=true;
+  var good=q.opts[k].ok;
+  [].forEach.call(app.querySelectorAll('.opt'),function(b){var o=q.opts[+b.dataset.k];b.disabled=true;if(o.ok)b.classList.add('ok');else if(+b.dataset.k===k)b.classList.add('no');});
+  var who=CH[pick(Object.keys(CH))],gain=0;
+  if(good){r.ok++;r.streak++;gain=100+Math.min(r.streak-1,5)*10;r.pts+=gain;}
+  else{r.wrong++;r.lives--;r.streak=0;}
+  updHud();
+  var dead=r.lives<=0,last=r.idx>=r.qs.length-1;
+  var btn=dead?'<button class="btn red" id="nq">Ver resultado</button>':'<button class="btn" id="nq">'+(last?'Terminar nivel ▶':'Siguiente ▶')+'</button>';
+  document.getElementById('fb').innerHTML='<div class="fb pop '+(good?'ok':'no')+'"><div class="av">'+who.e+'</div><div><b>'+(good?pick(GOOD)+' +'+gain+' pts':pick(BAD)+' Perdés una vida 💔')+'</b><span>'+esc(q.e)+'</span><div class="small" style="margin-top:4px">— '+who.n+'</div></div></div><div class="row" style="margin-top:14px">'+btn+'</div>';
+  document.getElementById('nq').onclick=function(){if(dead||last)result();else{r.idx++;showQ();}};
+}
+
+function result(){
+  var r=run,l=LV[r.i],i=r.i;quizKey=null;
+  var failed=r.lives<=0;
+  var stars=failed?0:(r.wrong===0?3:r.wrong<=1?2:1);
+  if(!failed){
+    var prev=S.best[i];
+    if(!prev||r.pts>prev.pts||stars>prev.stars)S.best[i]={pts:Math.max(prev?prev.pts:0,r.pts),stars:Math.max(prev?prev.stars:0,stars)};
+    save();
+  }
+  setLevel('Resultado');
+  if(failed){
+    app.innerHTML='<div class="card center pop" style="padding:30px"><div class="big">💔</div><h2>¡Se te acabaron las vidas!</h2><p class="mut">Contestaste '+r.ok+' bien antes de caer. No pasa nada, mae: repasá la teoría o intentalo de nuevo con las opciones revueltas.</p><div class="row" style="justify-content:center;margin-top:16px"><button class="btn red" id="rt">↺ Reintentar preguntas</button><button class="btn ghost" id="rv">📖 Repasar teoría</button><button class="btn ghost" id="mp">Mapa</button></div></div>';
+    document.getElementById('rt').onclick=function(){startQuiz(i);};
+    document.getElementById('rv').onclick=function(){scene(i,0);};
+    document.getElementById('mp').onclick=map;run={i:i,pts:0};updHud();return;
+  }
+  var msg=stars===3?'¡Perfecto! Esto merece un gallo pinto con huevo.':stars===2?'¡Tuanis! Muy bien jugado.':'Pasaste el nivel raspando, pero pasaste. ¡Pura vida!';
+  var nextBtn=l.final?'<button class="btn red" id="nx">🏆 Ver mi rango final</button>':'<button class="btn red" id="nx">Siguiente nivel ▶</button>';
+  app.innerHTML='<div class="card center pop" style="padding:30px"><div class="small" style="letter-spacing:.14em;text-transform:uppercase;color:var(--gold);font-weight:800">'+(l.final?'Final':'Nivel '+(i+1))+' completado</div><h2 style="margin:6px 0">'+esc(l.t)+'</h2>'+
+   '<div class="stars-big">'+'★'.repeat(stars)+'☆'.repeat(3-stars)+'</div><p style="margin-top:8px">'+msg+'</p>'+
+   '<div style="margin:10px 0"><span class="stat"><b>'+r.ok+' / '+r.qs.length+'</b>aciertos</span><span class="stat"><b>'+r.pts+'</b>puntos</span><span class="stat"><b>'+r.lives+' ❤️</b>vidas</span></div>'+
+   '<div class="row" style="justify-content:center;margin-top:12px">'+nextBtn+'<button class="btn ghost" id="rp">↺ Repetir nivel</button><button class="btn ghost" id="mp">Mapa</button></div></div>';
+  document.getElementById('nx').onclick=function(){if(l.final)ending();else levelIntro(i+1);};
+  document.getElementById('rp').onclick=function(){levelIntro(i);};
+  document.getElementById('mp').onclick=map;
+  run={i:i,pts:0};updHud();
+}
+
+function ending(){
+  run=null;setLevel('¡Fin del juego!');updHud();
+  var st=totalStars(),mx=LV.length*3,pts=totalPts();
+  var rank=st>=33?['👑','Maestro/a QA Pura Vida','Dominás las pruebas como pocos. ¡Con gente así CaféTico no se cae ni en Black Friday!']:
+           st>=25?['🥇','QA Tuanis','Muy buen nivel, mae. Un par de repasos y sos un crack.']:
+           st>=15?['🥈','Aprendiz de la Soda','Vas por buen camino. Repetí los niveles con menos estrellas para subir de rango.']:
+                  ['🥉','Recién salido del cole','Diay, falta rodaje. Volvé a la teoría y repetí los niveles: ¡se aprende jugando!'];
+  app.innerHTML='<div class="card center pop" style="padding:34px"><div class="big">'+rank[0]+'</div><div class="small" style="letter-spacing:.14em;text-transform:uppercase;color:var(--gold);font-weight:800">Tu rango</div><h1 style="font-size:clamp(28px,5vw,44px)">'+rank[1]+'</h1><p class="mut" style="max-width:560px;margin:10px auto">'+rank[2]+'</p>'+
+   '<div style="margin:12px 0"><span class="stat"><b>'+st+' / '+mx+'</b>estrellas</span><span class="stat"><b>'+pts+'</b>puntos</span><span class="stat"><b>'+fmt(S.sec)+'</b>tiempo de juego</span></div>'+
+   '<div class="fb" style="text-align:left;margin:14px auto;max-width:620px"><div class="av">🎤</div><div><b>Toledo dice:</b><span>¡Y así, mae, CaféTico salió a producción sin torta! Recuerden: probar pronto, a menudo y con automatización es lo que hace viable cualquier modelo moderno. ¡Pura vida y a seguir aprendiendo!</span></div></div>'+
+   '<div class="row" style="justify-content:center;margin-top:16px"><button class="btn red" id="mp">🗺️ Volver al mapa</button><button class="btn ghost" id="rs">Jugar de nuevo desde cero</button></div>'+
+   '<p class="disc" style="max-width:620px;margin:20px auto 0">🎭 Parodia educativa: los personajes son caricaturas ficticias; los diálogos no son declaraciones reales.</p></div>';
+  document.getElementById('mp').onclick=map;
+  document.getElementById('rs').onclick=function(){if(confirm('¿Borrar progreso y empezar de nuevo?')){S={best:{},sec:0,seen:{}};save();title();}};
+}
+
+title();
+</script>
+</body>
+</html>
